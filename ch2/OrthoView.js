@@ -6,7 +6,7 @@ var VSHADER_SOURCE =
     'varying vec4 v_Color;\n' +
     'void main() {\n' +
     'gl_Position = u_ProjMatrix * a_Position;\n' +
-    'gl_PointSize = 10.0;\n' +
+
     'v_Color = a_Color;\n' +
     '}\n';
 
