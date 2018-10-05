@@ -1,12 +1,15 @@
 var VSHADER_SOURCE = `
     attribute vec4 a_Position;
-    attribute vec4 a_Color; 
+    attribute vec3 a_Normal;
+    uniform vec3 lightdirection;
+    uniform vec3 lightColor;
     uniform mat4 u_MvpMatrix;
+    uniform vec3 u_BaseColor; 
     varying vec4 v_Color;
     void main() {
         gl_Position = u_MvpMatrix * a_Position;
         gl_PointSize = 10.0;
-        v_Color = a_Color;
+        v_Color = vec4( u_BaseColor * max( 0.0, dot( a_Normal, normalize( vec3( 1.3, 1, 3 )))) , 1) ;
     }`;
 
 var FSHADER_SOURCE = `
@@ -132,25 +135,31 @@ function initVertexBuffers(gl) {
     ])
 
     var indices = new Uint8Array([  
-        0, 1, 2,   2, 1, 3,    // front
-        4, 5, 6,  5, 6, 7,
-        8, 9, 10,  9, 10, 11, 
-        12, 13, 14, 13, 14, 15,
-        16, 17, 18, 17, 18, 19,
-        20, 21, 22, 21, 22, 23
+        0, 1, 2,   2, 1, 3,     // front
+        4, 5, 6,  5, 6, 7,      // right
+        8, 9, 10,  9, 10, 11,   // left
+        12, 13, 14, 13, 14, 15, // back
+        16, 17, 18, 17, 18, 19, // top
+        20, 21, 22, 21, 22, 23  // bottom
     ]);
+
+    var normals = new Float32Array([
+        0, 0, 1,  0, 0, 1,  0, 0, 1,  0, 0, 1,
+        1, 0, 0,  1, 0, 0,  1, 0, 0,  1, 0, 0,
+        -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0,
+        0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1,
+        0, 1, 0,  0, 1, 0,  0, 1, 0,  0, 1, 0,
+        0, -1, 0,  0, -1, 0,  0, -1, 0,  0, -1, 0  
+    ])
 
 
     // Create a buffer object
-    var vertexBuffer = gl.createBuffer();
-    var colorBuffer = gl.createBuffer();
+    
     var indexBuffer = gl.createBuffer();
-    if (!vertexBuffer ) {
-        return -1;
-    }
+    
 
+    var vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    // gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
     var FSIZE = vertices.BYTES_PER_ELEMENT;
     var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
@@ -162,23 +171,35 @@ function initVertexBuffers(gl) {
     gl.enableVertexAttribArray(a_Position);
 
 
+    // color
+    var colorBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    // gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+    var u_BaseColor = gl.getUniformLocation(gl.program, 'u_BaseColor');
+    
+    gl.uniform3f(u_BaseColor, 1.0, 0.0, 0.0 );
 
-    var FSIZE2 = colors.BYTES_PER_ELEMENT;
-    var a_Color = gl.getAttribLocation(gl.program, 'a_Color');
-    if(a_Color < 0) {
+    // normal
+
+    var normalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+
+    var FSIZE3 =  normals.BYTES_PER_ELEMENT;
+    var a_Normal = gl.getAttribLocation(gl.program, 'a_Normal');
+    if(a_Normal < 0) {
         console.log('Failed to get the storage location of a_Position');
         return -1;
     }
-    gl.vertexAttribPointer(a_Color, 4, gl.FLOAT, false, FSIZE2 * 4, 0);
-    gl.enableVertexAttribArray(a_Color);
+    gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, FSIZE3 * 3, 0);
+    gl.enableVertexAttribArray(a_Normal);
 
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer );
+    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
+    
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 
